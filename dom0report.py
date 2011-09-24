@@ -34,6 +34,7 @@ def get_xm_info():
     xm_info_output = fabric.api.sudo("%s && %s" % \
                                     (cmd_xm_info, cmd_xm_info_c), \
                                     pty=True).split('\r\n')
+    
     return xm_info_output
 
 def get_xm_list():
@@ -42,6 +43,7 @@ def get_xm_list():
     pid = fabric.api.sudo('kill -0 $(cat /var/run/xend.pid)', pty=True)
     xm_list_output = fabric.api.sudo("%s" % (cmd_xm_list), \
                                     pty=True).split("\r\n")
+    
     return xm_list_output
 
 def get_xm_list_extended():
@@ -49,6 +51,7 @@ def get_xm_list_extended():
     cmd_xm_list_l = "xm list -l"
     xm_list_l_output = fabric.api.sudo("%s" % (cmd_xm_list_l), \
                                         pty=True).split("\r\n")
+    
     return xm_list_l_output
 
 # Get informations from lvm
@@ -57,18 +60,21 @@ def get_lvmpv_infos():
     """Retrieve informations on physical volume"""
     cmd_pvs = "pvs --separator :"
     cmd_output = fabric.api.sudo("%s" % (cmd_pvs), pty=True).split("\r\n")
+    
     return cmd_output
 
 def get_lvmvg_infos():
     """Retrieve informations from lvm on non-diskless dom0"""
     cmd_vgs = "vgs --separator :"
     cmd_output = fabric.api.sudo("%s" % (cmd_vgs), pty=True).split("\r\n")
+    
     return cmd_output
 
 def get_lvmlv_infos():
     """lvm display infos"""
     cmd_lvm = "lvdisplay -C --separator :"
     cmd_output = fabric.api.sudo("%s" % (cmd_lvm), pty=True).split("\r\n")
+    
     return cmd_output
 
 # Get informations from dmidecode.
@@ -78,6 +84,7 @@ def get_memory_infos():
     cmd_memory =  "dmidecode -t memory"
     get_memory = fabric.api.sudo("%s" % (cmd_memory), pty=True).split("\r\n")
     print get_memory
+    
     return get_memory
 
 def get_processor_type():
@@ -86,6 +93,7 @@ def get_processor_type():
     get_processor = fabric.api.sudo("%s" % (cmd_processor), \
                                     pty=True).split("\r\n")
     print get_processor
+    
     return get_processor
 
 # Structure retrieve informations
@@ -102,6 +110,7 @@ def get_dom0_infos():
         else:
             secondlinevalue = " ".join(line.split())
             dom0[key] = dom0[key] + ' ' + secondlinevalue
+    
     return dom0
 
 def get_domu_infos():
@@ -112,6 +121,7 @@ def get_domu_infos():
     for line in xm_list[1:]:
         values = line.split()
         domus.append(dict(zip(key, values)))
+    
     return domus
 
 # Build list from lvm informations
@@ -124,6 +134,7 @@ def build_lvmpv_list():
     for args in lvmpv[1:]:
         values = args.split(':')
         lvmpv_list.append(dict(zip(key, values)))
+    
     return lvmpv_list
 
 def build_lvmvg_list():
@@ -134,6 +145,7 @@ def build_lvmvg_list():
     for args in lvmvg[1:]:
         values = args.split(':')
         lvmvg_list.append(dict(zip(key, values)))
+    
     return lvmvg_list
 
 def build_lvmlv_list():
@@ -144,6 +156,7 @@ def build_lvmlv_list():
     for args in lvmlv[1:]:
         values = args.split(':')
         lvmlv_list.append(dict(zip(key, values)))
+    
     return lvmlv_list
 
 # vim:set et sts=4 ts=4 tw=80:
