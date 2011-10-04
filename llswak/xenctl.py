@@ -1,48 +1,53 @@
 #! /bin/python env
 # -*- coding: utf-8 -*-
+"""Define here your command to the Fabric API"""
 
 # If you're using python 2.5
 from __future__ import with_statement
-
-"""Define here your command to the Fabric API"""
 
 __docformat__ = 'restructuredtext en'
 
 import remotefabric
 
-__author__ = "Guillaume Delpierre"
-__credits__ = "Guillaume Delpierre"
+__author__ = "Guillaume 'Llew' Delpierre"
+__credits__ = "Guillaume 'Llew' Delpierre"
 __license__ = "beerware"
-__maintainer__ = "Guillaume Delpierre"
+__maintainer__ = "Guillaume 'Llew' Delpierre"
 __email__ = "gde@nbs-system.com"
 __status__ = "Development"
 
-class XenRaw:
+class Xen(object):
     """
     This class is used to retrieve useful information
     from Xen through Fabric API.
     """
-    def __init__(self):
+    def __init__(self, load=True):
+    # True by default, explain specify False whem you need it.
         self.fabric = remotefabric.CmdFabric()
-
-    def xm_info(self):
+        self.xm_entries = None
+        self.vservers = None
+        self.name = ""
+        self.cpus = ""
+        self.free_memory = ""
+        self.total_memory = ""
+        self.used_memory = ""
+        if load:
+            self.load_xm_info()
+            self.load_xm_list()
+        
+    def raw_xm_info(self):
         """Retrieve result of xm info command through Fabric API"""
         cmd_xm = ("xm info")
         cmd_xmext = ("%s -c" % (cmd_xm))
         return self.fabric.sudo_fabric("%s && %s" % (cmd_xm, cmd_xmext))
 
-    def xm_list(self):
+    def raw_xm_list(self):
         """Retrieve result of xm list command through Fabric API"""
         return self.fabric.sudo_fabric("xm list")
 
-class XenProcessing:
-    """Use to data retrieved processing"""
-    def __init__(self):
-        self.xm = XenRaw()
-
-    def build_xminfo(self):
+    def load_xm_info(self):
         """Build a dictionnary from xm info output"""
-        raw_split = self.xm.xm_info().splitlines()
+        raw_split = self.raw_xm_info().splitlines()
         xm_entries = {}
         for line in raw_split:
             if not line.startswith('    '):
@@ -53,33 +58,45 @@ class XenProcessing:
                 secondlinevalue = " ".join(line.split())
                 xm_entries[key] = xm_entries[key] + ' ' + secondlinevalue
         
+        self.name = xm_entries['host']
+        self.cpus = int(xm_entries['nr_cpus'])
+        self.total_memory = int(xm_entries['total_memory'])
+        self.free_memory = int(xm_entries['free_memory'])
+        self.used_memory = int(self.total_memory - self.free_memory)
         return xm_entries
 
-    def build_xmlist(self):
+    def load_xm_list(self):
         """Build a list of virtual servers located on dom0"""
-        raw_split = self.xm.xm_list().splitlines()
+        raw_split = self.raw_xm_list().splitlines()
         vservers = []
         key = raw_split[0].split()
         for line in raw_split[1:]:
             value = line.split()
             vservers.append(dict(zip(key, value)))
-
         return vservers
 
-class ProcessingAvailableResources:
-    """Use to processing available resources on dom0 and domus"""
-    def __init__(self):
-        self.dom0 = XenProcessing().build_xminfo()
-        self.domus = XenProcessing().build_xmlist()
+    def domus(self):
+        """Load vservers informations"""
+        if None == self.vservers:
+            self.load_xm_list()
+        return self.vservers
+
+    def dom0(self):
+        """Load dom0 informations"""
+        if None == self.xm_entries:
+            self.load_xm_info()
+        return self.xm_entries
 
     def used_cpus(self):
         """Number of used CPUs on dom0"""
-        domus = self.domus
-
+        domus = self.domus()
         return sum([int(domu['VCPUs']) for domu in domus])
     
-    def free_cpus(self, used_cpus):
+    def free_cpus(self):
         """Number of free CPUs on dom0"""
-        dom0 = self.dom0
-        
-        return int(dom0['nr_cpus']) - self.used_cpus()
+        return self.cpus - self.used_cpus()
+
+    def __repr__(self):
+        return "dom0: %s - %s CPUs - %s MB (free) / %s MB (total)" \
+                " / %s MB (used)" %  (self.name, self.cpus, self.free_memory, 
+                                        self.total_memory, self.used_memory)
